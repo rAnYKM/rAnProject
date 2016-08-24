@@ -5,17 +5,18 @@
 
 """ randb.py - Basic Database Operations for MySQL
 
-MySQL database access operations
-Make SQL more Pythonic
-
 Requirements:
 
-- MySQLdb Package
+- MySQLdb
+- PANDAS
+- sqlalchemy
 
 """
 
 import sys
 import MySQLdb as mysql
+import pandas as pd
+from sqlalchemy import create_engine
 import logging
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -32,6 +33,7 @@ class rAnDB:
         :param charset: string
         """
         try:
+            self.db_name = db
             self.connection = mysql.connect(host=host, port=port, user=user, passwd=password, db=db, charset=charset)
             self.cursor = self.connection.cursor()
         except mysql.Error, e:
@@ -50,6 +52,13 @@ class rAnDB:
             'auto_increment': auto_increment,
         }
         return tmp
+
+    def fetch_column_name(self, table_name):
+        sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '%s' AND TABLE_SCHEMA = '%s'"\
+              % (table_name, self.db_name)
+        self.cursor.execute(sql)
+        row = self.cursor.fetchall()
+        return row
 
     def new_table(self, table_name, cols, key=-1):
         """ CREATE TABLE ...
@@ -88,10 +97,11 @@ class rAnDB:
         self.cursor.execute(sql)
         self.connection.commit()
 
-    def fetch_all(self, table_name, number):
-        sql = "SELECT * FROM %s LIMIT %d" % (table_name, number)
+    def simple_select(self, table_name, number=None):
+        sql = "SELECT * FROM %s" % table_name
+        if number is not None:
+            sql += " LIMIT %d" % number
         logging.debug('SQL Executed: %s' % sql)
         self.cursor.execute(sql)
         rows = self.cursor.fetchall()
-        for row in rows:
-            print row
+        return rows
