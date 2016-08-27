@@ -1,0 +1,15 @@
+{% extends "ranstyle.html" %}
+{% block body %}
+  {% for entry in entries %}
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+        <h3 class="panel-title">{{ entry.sid }}</h3>
+        </div>
+        <div class="panel-body">
+          {{ entry.uid|safe }}
+        </div>
+    </div>
+  {% else %}
+    <div class="alert alert-warning" role="alert"><em>Unbelievable.  No entries here so far</em></div>
+  {% endfor %}
+{% endblock %}

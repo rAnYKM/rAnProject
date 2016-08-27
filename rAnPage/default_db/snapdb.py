@@ -5,84 +5,23 @@
 
 """ snapdb.py - SNAP data set to MySQL data base
 
-Google+ Data Set
+SNAP Google+ & Facebook Data Set
 
 """
 
 import os
-from randb import rAnDB
 import ranfig as rfg
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKeyConstraint
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
+import time
 import logging
+from module_facebook import Nodes, Attributes, Relations, AttributeLinks
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 Base = declarative_base()
 
 
-def test_code2():
-    ranfig = rfg.load_ranfig()
-    database = ranfig['Database']
-    engine = create_engine('%s://%s:%s@%s:%s/%s' %
-                           (database['engine'], database['user'], database['password'],
-                            database['host'], database['port'], database['db']))
-    conn = engine.connect()
-    result = conn.execute('SELECT * FROM test')
-    for row in result:
-        print row
-    conn.close()
-
-
-def test_code():
-    db = rAnDB('142.104.81.176', 3306, 'root', 'jychen21', 'ranproject')
-    col = [
-        rAnDB.col_gen('id', 'int', None, True, True),
-        rAnDB.col_gen('name', 'varchar', 255, True),
-        rAnDB.col_gen('city', 'varchar', 255),
-        rAnDB.col_gen('age', 'int', None)
-    ]
-    names = ['name', 'city', 'age']
-    values = ['jason', 'Shanghai', 24]
-    # db.new_table('test', col, 0)
-    # db.insert('test', names, values)
-    # db.insert('test', names, values)
-    print db.fetch_column_name('test')
-    print db.simple_select('test')
-    db.connection.close()
-
-
 class SnapFacebook:
-    class Nodes(Base):
-        __tablename__ = 'nodes'
-        id = Column(Integer, primary_key=True, autoincrement=True)
-        user_id = Column(Integer, index=True, nullable=False)
-
-    class Attributes(Base):
-        __tablename__ = 'attributes'
-        id = Column(Integer, primary_key=True, autoincrement=True)
-        attr_id = Column(String(255), index=True, nullable=False)
-        category_1 = Column(String(255))
-        category_2 = Column(String(255))
-        category_3 = Column(String(255))
-
-    class Relations(Base):
-        __tablename__ = 'relations'
-        id = Column(Integer, primary_key=True, autoincrement=True)
-        source = Column(Integer, nullable=False)
-        destination = Column(Integer, nullable=False)
-        __table_args__ = (
-            ForeignKeyConstraint(['source', 'destination'], ['nodes.uid', 'nodes.uid'])
-        )
-
-    class AttributeLinks(Base):
-        __tablename__ = 'attribute_links'
-        id = Column(Integer, primary_key=True, autoincrement=True)
-        user = Column(Integer, nullable=False)
-        attr = Column(String(255), nullable=False)
-        __table_args__ = (
-            ForeignKeyConstraint(['user', 'attr'], ['nodes.uid', 'attributes.uid'])
-        )
-
     @staticmethod
     def __abbr_attr(attr):
         abbr_l = [a[0] + a[-1] for a in attr]
@@ -153,10 +92,59 @@ class SnapFacebook:
     def __init_db(self):
         database = self.ranfig['Database']
         self.engine = create_engine('%s://%s:%s@%s:%s/%s' %
-                               (database['engine'], database['user'], database['password'],
-                                database['host'], database['port'], database['db']))
+                                    (database['engine'], database['user'], database['password'],
+                                     database['host'], database['port'], database['db']))
         self.conn = self.engine.connect()
+        Base.metadata.drop_all(self.engine)
+        Base.metadata.create_all(self.engine)
 
+    def __core_insert_node_list(self):
+        t0 = time.time()
+        self.engine.execute(
+            Nodes.__table__.insert(),
+            [{'user_id': node_name} for node_name in self.node.keys()]
+        )
+        logging.debug('SQLAlchemy Core: Insert node list in %f s' % (time.time() - t0))
+
+    def __dict_for_attr_insert(self, attr, cate, max_cate_number=3):
+        res_dict = {'attr_id': 'a' + self.__abbr_attr(cate) + attr}
+        for cno, c in enumerate(cate):
+            if cno >= max_cate_number:
+                break
+            else:
+                res_dict['category_' + str(cno + 1)] = c
+        for cno in range(len(cate), max_cate_number):
+            res_dict['category_' + str(cno + 1)] = None
+        return res_dict
+
+    def __core_insert_attr_list(self):
+        t0 = time.time()
+        self.engine.execute(
+            Attributes.__table__.insert(),
+            [self.__dict_for_attr_insert(f[0], f[1]) for f in self.featname]
+        )
+        logging.debug('SQLAlchemy Core: Insert attribute list in %f s' % (time.time() - t0))
+
+    def __core_insert_relation_list(self):
+        t0 = time.time()
+        large_edges = self.edges + [[self.root, node] for node in self.friends]
+        self.engine.execute(
+            Relations.__table__.insert(),
+            [{'source': e[0], 'destination': e[1]} for e in large_edges]
+        )
+        logging.debug('SQLAlchemy Core: Insert social relation list in %f s' % (time.time() - t0))
+
+    def __core_insert_link_list(self):
+        t0 = time.time()
+        large_links = []
+        for n, fs in self.node.iteritems():
+            large_links += [{'user': n, 'attr': 'a' + self.__abbr_attr(self.featname[att][1]) + self.featname[att][0]}
+                            for att in fs]
+        self.engine.execute(
+            AttributeLinks.__table__.insert(),
+            large_links
+        )
+        logging.debug('SQLAlchemy Core: Insert attribute link list in %f s' % (time.time() - t0))
 
     def __init__(self, ego_id):
         self.ranfig = rfg.load_ranfig()
@@ -168,7 +156,12 @@ class SnapFacebook:
         self.egofeat = self.__ego_feat_list()
         self.node[self.root] = self.egofeat
         self.edges, self.friends = self.__edge_list()
+        self.__init_db()
+        self.__core_insert_node_list()
+        self.__core_insert_attr_list()
+        self.__core_insert_relation_list()
+        self.__core_insert_link_list()
 
 
 if __name__ == '__main__':
-    test_code2()
+    egonet = SnapFacebook('107')
