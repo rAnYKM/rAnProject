@@ -3,6 +3,7 @@
     <h3>User: {{ user }}</h3>
 <div class="row">
     <div class="col-md-6">
+    <form action="{{ url_for('settings', uid=user) }}" method="post">
     <table class="table">
             <thead>
               <tr>
@@ -10,6 +11,7 @@
                   <th>category 1</th>
                   <th>category 2</th>
                   <th>category 3</th>
+                  <th>Secret?</th>
               </tr>
             </thead>
           {% for item in profile %}
@@ -19,6 +21,7 @@
                   <td>{{ item.c1|safe }}</td>
                   <td>{{ item.c2|safe }}</td>
                   <td>{{ item.c3|safe }}</td>
+                  <td><input type="checkbox" value="{{ item.att }}" name="choose"></td>
               </tr>
             </tbody>
   {% else %}
@@ -30,32 +33,9 @@
     </tbody>
   {% endfor %}
     </table>
-    </div>
-    <div class="col-md-6">
-    <table class="table">
-            <thead>
-              <tr>
-                  <th>friend list</th>
-              </tr>
-            </thead>
-          {% for id in friend %}
-            <tbody>
-              <tr>
-                  <td><a href="{{ url_for('show_profile', uid=id) }}">{{ id }}</a></td>
-              </tr>
-            </tbody>
-  {% else %}
-    <tbody>
-        <tr>
-            <td>Nothing Available</td>
-        </tr>
-    </tbody>
-  {% endfor %}
-    </table>
-        {% import "blocks.html" as blocks %}
-    {{blocks.pager('/user/' + user, p.total, p.limit, p.curr_page)}}
+        <input type="submit" class="btn btn-sm btn-default" value="Submit">
+    </form>
     </div>
 </div>
-    <a class="btn btn-sm btn-default" href="{{ url_for('settings', uid=user) }}">rAnPriv</a>
-    <button type="button" class="btn btn-sm btn-default" onclick="history.back(-1)">Return</button>
+
 {% endblock %}

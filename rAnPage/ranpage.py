@@ -14,6 +14,7 @@ from flask import Flask, request, session, g, redirect, url_for, abort, render_t
 from rAnPage.database import db_session
 from rAnPage.default_db.module_facebook import *
 from sqlalchemy import func, or_
+from rAnPriv.ran_graph import RanGraph
 
 app = Flask(__name__)
 
@@ -23,6 +24,15 @@ app.config.update(dict(
     USERNAME='ran',
     PASSWORD='root'
 ))
+
+
+def get_ran():
+    soc = [row[0] for row in db_session.query(Nodes.user_id)]
+    att = [row[0] for row in db_session.query(Attributes.attr_id)]
+    edg = [(row[0], row[1]) for row in db_session.query(Relations.source, Relations.destination)]
+    lin = [(row[0], row[1]) for row in db_session.query(AttributeLinks.user, AttributeLinks.attr)]
+    ran = RanGraph(soc, att, edg, lin)
+    return ran
 
 
 @app.route('/', methods=['GET'])
@@ -62,14 +72,46 @@ def show_profile(uid):
         limit(int(limit)).offset((int(page) - 1) * int(limit))
     total = db_session.query(func.count(Relations.id)).\
         filter(or_(Relations.source == uid, Relations.destination == uid)).one()[0]
-    friend = list()
+    friend = set()
     for row in res2:
         if row[0] == uid:
-            friend.append(row[1])
+            friend.add(row[1])
         else:
-            friend.append(row[0])
+            friend.add(row[0])
     pager = {'total': int(total), 'limit': int(limit), 'curr_page': int(page)}
-    return render_template('show_profile.html', profile=profile, friend=friend, user=uid, p=pager)
+    return render_template('show_profile.html', profile=profile, friend=list(friend), user=uid, p=pager)
+
+
+@app.route('/ranpriv/result/<uid>/', methods=['GET'])
+def protection(uid):
+    ran = get_ran()
+    secrets = request.args.getlist('secrets')
+    price = {att: 1 for att in ran.attr_node}
+    epsilon = [0.5]*len(ran.attr_node)
+    attr = ran.single_protection(uid, secrets, price, epsilon, 'greedy', 'single')
+    profile = list()
+    for row in attr:
+        sub_res = db_session.query(Attributes.category_1, Attributes.category_2, Attributes.category_3). \
+            filter(Attributes.attr_id == row)[0]
+        profile.append(dict(att=row, c1=sub_res[0], c2=sub_res[1], c3=sub_res[2]))
+    return render_template('show_results.html', profile=profile, user=uid)
+
+
+@app.route('/ranpriv/settings/<uid>/', methods=['GET', 'POST'])
+def settings(uid):
+    res = db_session.query(AttributeLinks.attr).filter(AttributeLinks.user == uid)
+    profile = list()
+    attr = list()
+    for row in res:
+        sub_res = db_session.query(Attributes.category_1, Attributes.category_2, Attributes.category_3). \
+            filter(Attributes.attr_id == row[0])[0]
+        profile.append(dict(att=row[0], c1=sub_res[0], c2=sub_res[1], c3=sub_res[2]))
+        attr.append(row[0])
+    if request.method == 'POST':
+        secret = [att for att in request.form.getlist('choose')]
+        flash(str(len(secret)))
+        return redirect(url_for('protection', uid=uid, secrets=secret))
+    return render_template('settings.html', profile=profile, user=uid)
 
 
 @app.teardown_appcontext
