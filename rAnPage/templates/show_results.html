@@ -31,6 +31,28 @@
   {% endfor %}
     </table>
     </div>
+    <div class="col-md-6">
+    <table class="table">
+            <thead>
+              <tr>
+                  <th>friend list</th>
+              </tr>
+            </thead>
+          {% for id in friend %}
+            <tbody>
+              <tr>
+                  <td><a href="{{ url_for('show_profile', uid=id) }}">{{ id }}</a></td>
+              </tr>
+            </tbody>
+  {% else %}
+    <tbody>
+        <tr>
+            <td>Nothing Available</td>
+        </tr>
+    </tbody>
+  {% endfor %}
+    </table>
+    </div>
 </div>
     <button type="button" class="btn btn-sm btn-default" onclick="history.back(-1)">Return</button>
 {% endblock %}

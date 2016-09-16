@@ -23,6 +23,6 @@
     </tbody>
   {% endfor %}
     </table>
-    {% import "blocks.html" as blocks %}
+  {% import "blocks.html" as blocks %}
     {{blocks.pager('/', p.total, p.limit, p.curr_page)}}
 {% endblock %}

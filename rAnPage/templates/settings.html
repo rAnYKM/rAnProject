@@ -33,6 +33,13 @@
     </tbody>
   {% endfor %}
     </table>
+        <p>Protection Level: </p>
+        <select name="level">
+            <option value="" disabled="disabled"  style="display:none" selected="selected">Please select</option>
+            <option value="0">Strict</option>
+            <option value="1">Normal</option>
+            <option value="2">Lite</option>
+        </select>
         <input type="submit" class="btn btn-sm btn-default" value="Submit">
     </form>
     </div>

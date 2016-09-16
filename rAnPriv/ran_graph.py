@@ -578,7 +578,35 @@ class RanGraph:
                       % (len(self.soc_edge) - new_ran.soc_net.number_of_edges(), len(self.soc_edge)))
         return new_ran, (len(self.soc_edge) - len(soc_edge)) / float(len(self.soc_edge))
 
-    def s_knapsack_relation(self, secrets, price, epsilon, mode='dp'):
+    def single_s_relation(self, node, secrets, price, epsilon, mode='greedy'):
+        soc_edge = []
+        if len(secrets) == 0:
+            soc_edge += [(node, soc) for soc in self.soc_net.neighbors(node)]
+        else:
+            eps = epsilon
+            fn = [i for i in self.soc_net.neighbors(node)]
+            items = list()
+            for a in fn:
+                weight = set([i for i in self.soc_net.neighbors(a)])
+                items.append((a, price[a], weight))
+            s_set = [set([i for i in self.soc_attr_net.neighbors(s)]) for s in secrets]
+            # **WARNING** BE CAREFUL WHEN USING DP_SOLVER
+            # val, sel = MultiDimensionalKnapsack(items, eps).dp_solver()
+            # val, sel = MultiDimensionalKnapsack(items, eps).greedy_solver('scale')
+            if mode == 'dp':
+                val, sel = SetKnapsack(set(self.soc_net.nodes()), s_set, items, eps).dp_solver()
+            elif mode == 'greedy':
+                val, sel = SetKnapsack(set(self.soc_net.nodes()), s_set, items, eps).greedy_solver()
+                # print val, sel
+            elif mode == 'dual_greedy':
+                val, sel = SetKnapsack(set(self.soc_net.nodes()), s_set, items, eps).dual_greedy_solver()
+                # break
+            else:
+                val, sel = SetKnapsack(set(self.soc_net.nodes()), s_set, items, eps).dual_dp_solver()
+            soc_edge += [(node, attr) for attr in sel]
+        return soc_edge
+
+    def s_knapsack_relation(self, secrets, price, epsilon, mode='greedy'):
         soc_node = self.soc_node
         attr_node = self.attr_node
         soc_edge = []

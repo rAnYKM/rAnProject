@@ -11,7 +11,7 @@ Load the basic settings for rAnProject
 
 import ConfigParser as cp
 
-DEFAULT_SETTING_FILE = '../settings.ini'
+DEFAULT_SETTING_FILE = 'settings.ini'
 
 
 def load_ranfig(file=DEFAULT_SETTING_FILE):

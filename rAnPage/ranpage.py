@@ -27,10 +27,14 @@ app.config.update(dict(
 
 
 def get_ran():
-    soc = [row[0] for row in db_session.query(Nodes.user_id)]
-    att = [row[0] for row in db_session.query(Attributes.attr_id)]
-    edg = [(row[0], row[1]) for row in db_session.query(Relations.source, Relations.destination)]
-    lin = [(row[0], row[1]) for row in db_session.query(AttributeLinks.user, AttributeLinks.attr)]
+    soc_q = db_session.query(Nodes.user_id)
+    att_q = db_session.query(Attributes.attr_id)
+    edg_q = db_session.query(Relations.source, Relations.destination)
+    lin_q = db_session.query(AttributeLinks.user, AttributeLinks.attr)
+    soc = [row[0] for row in soc_q]
+    att = [row[0] for row in att_q]
+    edg = [(row[0], row[1]) for row in edg_q]
+    lin = [(row[0], row[1]) for row in lin_q]
     ran = RanGraph(soc, att, edg, lin)
     return ran
 
@@ -56,9 +60,9 @@ def show_profile(uid):
     page = request.args.get('p', '1')
     if not page:
         page = 1
-    limit = request.args.get('limit', '20')
+    limit = request.args.get('limit', '10')
     if not limit:
-        limit = 20
+        limit = 10
     if not uid:
         uid = 0
     res = db_session.query(AttributeLinks.attr).filter(AttributeLinks.user==uid)
@@ -86,15 +90,20 @@ def show_profile(uid):
 def protection(uid):
     ran = get_ran()
     secrets = request.args.getlist('secrets')
+    level = int(request.args.get('level', '0'))
     price = {att: 1 for att in ran.attr_node}
-    epsilon = [0.5]*len(ran.attr_node)
+    price_r = {n: 1 for n in ran.soc_node}
+    strict = [len(ran.soc_attr_net.neighbors(secret))/float(ran.soc_net.number_of_nodes()) for secret in secrets]
+    epsilon = [min(st + 0.1 + level*0.2, 0.8) for st in strict]
     attr = ran.single_protection(uid, secrets, price, epsilon, 'greedy', 'single')
+    soc = ran.single_s_relation(uid, secrets, price_r, epsilon, 'greedy')
     profile = list()
+    friend = [node[1] for node in soc]
     for row in attr:
         sub_res = db_session.query(Attributes.category_1, Attributes.category_2, Attributes.category_3). \
             filter(Attributes.attr_id == row)[0]
         profile.append(dict(att=row, c1=sub_res[0], c2=sub_res[1], c3=sub_res[2]))
-    return render_template('show_results.html', profile=profile, user=uid)
+    return render_template('show_results.html', profile=profile, friend=friend, user=uid)
 
 
 @app.route('/ranpriv/settings/<uid>/', methods=['GET', 'POST'])
@@ -109,8 +118,12 @@ def settings(uid):
         attr.append(row[0])
     if request.method == 'POST':
         secret = [att for att in request.form.getlist('choose')]
-        flash(str(len(secret)))
-        return redirect(url_for('protection', uid=uid, secrets=secret))
+        level = request.form['level']
+        if not level:
+            level = 0
+        else:
+            level = int(level)
+        return redirect(url_for('protection', uid=uid, secrets=secret, level=level))
     return render_template('settings.html', profile=profile, user=uid)
 
 
