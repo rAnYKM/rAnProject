@@ -17,7 +17,6 @@ from sqlalchemy.orm import sessionmaker
 from SNAPdata.database import init_database_from_ranfig
 Base = declarative_base()
 
-
 COLUMNS = {
     'edges': ['start', 'end', 'root'],
     'nodes': ['user_id', 'profile', 'root'],
@@ -45,7 +44,7 @@ class Nodes(Base):
 class Attributes(Base):
     __tablename__ = 'attributes'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    attr = Column(String(255), index=True, nullable=False)
+    attr = Column(String(255), index=True, nullable=True)
     category = Column(String(255))
     root = Column(String(255), index=True, nullable=False)
 
@@ -55,4 +54,5 @@ def initialize():
     session.configure(bind=engine)
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
+
 

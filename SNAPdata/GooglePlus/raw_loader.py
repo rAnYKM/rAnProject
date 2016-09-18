@@ -43,7 +43,7 @@ class SnapRawGPLoader:
 
 def main():
     sgp = SnapRawGPLoader()
-    print sgp.get_ego_net('115516333681138986628')[1].count()
+    print sgp.get_ego_net('101499880233887429402')[1].count()
 
 if __name__ == '__main__':
     main()

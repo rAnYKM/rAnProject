@@ -111,8 +111,8 @@ def init_builder(ranfig_dir):
         feats = load_feats(ego, dirs)
         # edge_checker(edges, nodes)
         logging.debug('size: %d, %d, %d' % (len(nodes), len(edges), len(feats)))
-        if len(edges) == 0:
-            logging.debug('No.%d ego network #%s no edges, skipped' % (index, ego))
+        if len(edges) == 0 or len(feats) == 0:
+            logging.debug('No.%d ego network #%s has neither edges nor features, skipped' % (index, ego))
             continue
         # sqlalchemy core format
         core_edges = [__process_core_edge(edge, ego) for edge in edges]
