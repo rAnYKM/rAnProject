@@ -12,6 +12,7 @@ SNAPdata.GooglePlus
 import os
 import time
 import logging
+import csv
 from SNAPdata.GooglePlus.tables import *
 import ranfig as rfg
 
@@ -63,9 +64,8 @@ def load_nodes(uid, dirs):
 
 
 def __process_raw_feat_line(line):
-    line = line.strip().split(' ')[1].split(':')
-    return [line[1], line[0]]
-
+    line = line.strip().split(':')
+    return [line[1], line[0].split(' ')[1]]
 
 def load_feats(uid, dirs):
     with open(os.path.join(dirs, uid + '.featnames'), 'rb') as fp:
@@ -73,19 +73,29 @@ def load_feats(uid, dirs):
     return feats
 
 
-def __process_core_edge(edge, uid):
+def __process_core_edge(edge, uid, flag=True):
     col = COLUMNS['edges']
-    return {col[0]: edge[0], col[1]: edge[1], col[2]: uid}
+    tmp = {col[0]: edge[0], col[1]: edge[1]}
+    if flag:
+        tmp[col[2]] = uid
+    return tmp
 
 
-def __process_core_node(node, uid):
+def __process_core_node(node, uid, flag=True):
     col = COLUMNS['nodes']
-    return {col[0]: node[0], col[1]: node[1], col[2]: uid}
+    tmp = {col[0]: node[0], col[1]: node[1]}
+    if flag:
+        tmp[col[2]] = uid
+    return tmp
 
 
-def __process_core_feat(attr, uid):
+
+def __process_core_feat(attr, uid, flag=True):
     col = COLUMNS['attributes']
-    return {col[0]: attr[0], col[1]: attr[1], col[2]: uid}
+    tmp = {col[0]: attr[0], col[1]: attr[1]}
+    if flag:
+        tmp[col[2]] = uid
+    return tmp
 
 
 def make_block(li, size=BLOCK_SIZE):
@@ -97,6 +107,41 @@ def make_block(li, size=BLOCK_SIZE):
     blocks.append(li[index:])
     logging.debug('Divided into %d blocks with size=%d' % (len(blocks), size))
     return blocks
+
+
+def csv_builder(ranfig_dir):
+    rfg_settings = rfg.load_ranfig(ranfig_dir)
+    dirs = rfg_settings['SNAP']['googleplus']
+    ego_nodes = get_ego_nodes()
+    logging.debug('Begin to build the database')
+    if not os.path.exists(os.path.join(dirs, 'csv')):
+        os.makedirs(os.path.join(dirs, 'csv'))
+    for index, ego in enumerate(ego_nodes):
+        starts = time.time()
+        edges = load_edges(ego, dirs)
+        nodes = load_nodes(ego, dirs)
+        feats = load_feats(ego, dirs)
+        # edge_checker(edges, nodes)
+        logging.debug('size: %d, %d, %d' % (len(nodes), len(edges), len(feats)))
+        if len(edges) == 0 or len(feats) == 0:
+            logging.debug('No.%d ego network #%s has neither edges nor features, skipped' % (index, ego))
+            continue
+        core_edges = [__process_core_edge(edge, ego, False) for edge in edges]
+        core_nodes = [__process_core_node(node, ego, False) for node in nodes]
+        core_feats = [__process_core_feat(attr, ego, False) for attr in feats]
+        with open(os.path.join(dirs, 'csv', ego + '-node.csv'), 'wb') as fp:
+            writer = csv.DictWriter(fp, fieldnames=COLUMNS['nodes'][:-1])
+            writer.writeheader()
+            writer.writerows(core_nodes)
+        with open(os.path.join(dirs, 'csv', ego + '-edge.csv'), 'wb') as fp:
+            writer = csv.DictWriter(fp, fieldnames=COLUMNS['edges'][:-1])
+            writer.writeheader()
+            writer.writerows(core_edges)
+        with open(os.path.join(dirs, 'csv', ego + '-feat.csv'), 'wb') as fp:
+            writer = csv.DictWriter(fp, fieldnames=COLUMNS['attributes'][:-1])
+            writer.writeheader()
+            writer.writerows(core_feats)
+        logging.debug('Finish adding No.%d ego network #%s in %f s' % (index, ego, time.time() - starts))
 
 
 def init_builder(ranfig_dir):
@@ -138,4 +183,4 @@ def init_builder(ranfig_dir):
 
 
 if __name__ == '__main__':
-    init_builder('../../settings.ini')
+    csv_builder('../../settings.ini')

@@ -147,7 +147,7 @@ class SnapFacebook:
         logging.debug('SQLAlchemy Core: Insert attribute link list in %f s' % (time.time() - t0))
 
     def __init__(self, ego_id):
-        self.ranfig = rfg.load_ranfig()
+        self.ranfig = rfg.load_ranfig('../../settings.ini')
         self.dir = self.ranfig['SNAP']
         self.root = ego_id
         self.featname = self.__feat_name_list()

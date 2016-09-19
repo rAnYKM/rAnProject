@@ -11,6 +11,8 @@ SNAP Google+ & Facebook Data Set
 
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import scoped_session, sessionmaker
+import ranfig as rfg
 Base = declarative_base()
 
 class Nodes(Base):
@@ -43,3 +45,14 @@ class AttributeLinks(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user = Column(String(255), ForeignKey('nodes.user_id'), nullable=False)
     attr = Column(String(255), ForeignKey('attributes.attr_id'), nullable=False)
+
+def initialize():
+    ranfig = rfg.load_ranfig('../settings.ini')
+    database = ranfig['Database']
+    engine = create_engine('%s://%s:%s@%s:%s/%s' %
+                           (database['engine'], database['user'], database['password'],
+                            database['host'], database['port'], database['db']))
+    session = sessionmaker()
+    session.configure(bind=engine)
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)

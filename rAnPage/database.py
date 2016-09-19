@@ -26,5 +26,6 @@ Base.query = db_session.query_property()
 
 def init_db():
     # import any thing related
-    import default_db.module_facebook
-    Base.metadata.create_all(bind=engine)
+    import default_db.module_facebook as fbdb
+    fbdb.initialize()
+
