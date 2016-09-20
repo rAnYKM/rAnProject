@@ -228,7 +228,6 @@ class RanGraph:
                         return True
             return False
 
-
         soc_node = self.soc_net.nodes()
         attr_node = self.attr_net.nodes()
         soc_edge = []
@@ -285,15 +284,9 @@ class RanGraph:
         logging.debug("Random Masking: %d/%d attribute edges removed" % (attr_conceal, len(self.attr_edge)))
         logging.debug("Random Masking: %d/%d social relations removed" %
                       (len(self.soc_edge) - new_ran.soc_net.number_of_edges(), len(self.soc_edge)))
-        return new_ran, attr_conceal / float(len(self.attr_edge)), (len(self.soc_edge) - new_ran.soc_net.number_of_edges()) / float(
-            len(self.soc_edge))
+        return new_ran, attr_conceal / float(len(self.attr_edge)), (len(self.soc_edge) - new_ran.soc_net.number_of_edges()) / float(len(self.soc_edge))
 
     def nb_masking(self, secrets, mask_ratio, mode='off'):
-        soc_node = self.soc_net.nodes()
-        attr_node = self.attr_net.nodes()
-        soc_edge = []
-        attr_edge = []
-
         def exceed_weights(w, max_w):
             for i in xrange(len(w)):
                 if w[i] > max_w[i]:
@@ -415,6 +408,7 @@ class RanGraph:
         """
         return a sub graph with satisfying epsilon-privacy
         :param secrets: dict
+        :param price: dict
         :param epsilon: dict
         :return: RanGraph
         """

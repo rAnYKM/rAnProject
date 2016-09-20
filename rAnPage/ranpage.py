@@ -9,8 +9,7 @@ Based on Flask micro-architecture
 
 """
 
-import os
-from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash
+from flask import Flask, request, redirect, url_for, render_template
 from rAnPage.database import db_session
 from rAnPage.default_db.module_facebook import *
 from sqlalchemy import func, or_
@@ -48,8 +47,8 @@ def show_entries():
     if not limit:
         limit = 20
     total = db_session.query(func.count(Nodes.id)).one()[0]
-    res = db_session.query(Nodes.id, Nodes.user_id).order_by(Nodes.id).\
-            limit(int(limit)).offset((int(page) - 1) * int(limit))
+    res = db_session.query(Nodes.id, Nodes.user_id).order_by(Nodes.id). \
+        limit(int(limit)).offset((int(page) - 1) * int(limit))
     entries = [dict(sid=row[0], uid=row[1]) for row in res]
     pager = {'total': int(total), 'limit': int(limit), 'curr_page': int(page)}
     return render_template('show_entries.html', entries=entries, p=pager)
@@ -65,16 +64,16 @@ def show_profile(uid):
         limit = 10
     if not uid:
         uid = 0
-    res = db_session.query(AttributeLinks.attr).filter(AttributeLinks.user==uid)
+    res = db_session.query(AttributeLinks.attr).filter(AttributeLinks.user == uid)
     profile = list()
     for row in res:
-        sub_res = db_session.query(Attributes.category_1, Attributes.category_2, Attributes.category_3).\
-            filter(Attributes.attr_id==row[0])[0]
+        sub_res = db_session.query(Attributes.category_1, Attributes.category_2, Attributes.category_3). \
+            filter(Attributes.attr_id == row[0])[0]
         profile.append(dict(att=row[0], c1=sub_res[0], c2=sub_res[1], c3=sub_res[2]))
-    res2 = db_session.query(Relations.source, Relations.destination).\
+    res2 = db_session.query(Relations.source, Relations.destination). \
         filter(or_(Relations.source == uid, Relations.destination == uid)). \
         limit(int(limit)).offset((int(page) - 1) * int(limit))
-    total = db_session.query(func.count(Relations.id)).\
+    total = db_session.query(func.count(Relations.id)). \
         filter(or_(Relations.source == uid, Relations.destination == uid)).one()[0]
     friend = set()
     for row in res2:
@@ -93,8 +92,8 @@ def protection(uid):
     level = int(request.args.get('level', '0'))
     price = {att: 1 for att in ran.attr_node}
     price_r = {n: 1 for n in ran.soc_node}
-    strict = [len(ran.soc_attr_net.neighbors(secret))/float(ran.soc_net.number_of_nodes()) for secret in secrets]
-    epsilon = [min(st + 0.1 + level*0.2, 0.8) for st in strict]
+    strict = [len(ran.soc_attr_net.neighbors(secret)) / float(ran.soc_net.number_of_nodes()) for secret in secrets]
+    epsilon = [min(st + 0.1 + level * 0.2, 0.8) for st in strict]
     attr = ran.single_protection(uid, secrets, price, epsilon, 'greedy', 'single')
     soc = ran.single_s_relation(uid, secrets, price_r, epsilon, 'greedy')
     profile = list()

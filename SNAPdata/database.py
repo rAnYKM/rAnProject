@@ -21,6 +21,7 @@ SUPPORTED_DATA_SET = {'GooglePlus': 'snap_gp',
                       'Facebook': 'snap_fb'}
 Base = declarative_base()
 
+
 def init_database_from_ranfig(ranfig_dir, data_set):
     ranfig = rfg.load_ranfig(ranfig_dir)
     database = ranfig['Database']
@@ -28,6 +29,3 @@ def init_database_from_ranfig(ranfig_dir, data_set):
                            (database['engine'], database['user'], database['password'],
                             database['host'], database['port'], SUPPORTED_DATA_SET[data_set]))
     return engine
-
-if __name__ == '__main__':
-    engine = init_database_from_ranfig('../settings.ini', 'GooglePlus')

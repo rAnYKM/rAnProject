@@ -11,7 +11,7 @@ SNAPdata.GooglePlus
 
 """
 
-from sqlalchemy import Column, Integer, String, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from SNAPdata.database import init_database_from_ranfig
@@ -48,11 +48,10 @@ class Attributes(Base):
     category = Column(String(255))
     root = Column(String(255), index=True, nullable=False)
 
+
 def initialize():
     engine = init_database_from_ranfig(RANFIG_DIR, 'GooglePlus')
     session = sessionmaker()
     session.configure(bind=engine)
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
-
-

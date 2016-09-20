@@ -67,6 +67,7 @@ def __process_raw_feat_line(line):
     line = line.strip().split(':')
     return [line[1], line[0].split(' ')[1]]
 
+
 def load_feats(uid, dirs):
     with open(os.path.join(dirs, uid + '.featnames'), 'rb') as fp:
         feats = [__process_raw_feat_line(line) for line in fp.readlines()]
@@ -89,7 +90,6 @@ def __process_core_node(node, uid, flag=True):
     return tmp
 
 
-
 def __process_core_feat(attr, uid, flag=True):
     col = COLUMNS['attributes']
     tmp = {col[0]: attr[0], col[1]: attr[1]}
@@ -101,7 +101,7 @@ def __process_core_feat(attr, uid, flag=True):
 def make_block(li, size=BLOCK_SIZE):
     blocks = []
     index = 0
-    while (len(li[index:]) >= size):
+    while len(li[index:]) >= size:
         blocks.append(li[index: index + size])
         index += size
     blocks.append(li[index:])

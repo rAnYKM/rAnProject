@@ -28,4 +28,3 @@ def init_db():
     # import any thing related
     import default_db.module_facebook as fbdb
     fbdb.initialize()
-

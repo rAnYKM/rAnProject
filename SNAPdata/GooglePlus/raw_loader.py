@@ -19,7 +19,6 @@ import logging
 from SNAPdata.GooglePlus.tables import *
 from build_raw_database import get_ego_nodes
 
-
 Base = declarative_base()
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -71,20 +70,26 @@ class GPRawEgoLoader(SnapRawGPLoader):
         cate = self.feat_table[COLUMNS['attributes'][1]][index]
         return cate + ':' + self.clean_string(str(name))
 
-    def profile_change(self):
-        profiles = self.node_table[COLUMNS['nodes'][1]]
+    def get_new_feat(self, index):
+        name = self.new_feat_table[COLUMNS['attributes'][0]][index]
+        cate = self.new_feat_table[COLUMNS['attributes'][1]][index]
+        return cate + ':' + name
+
+    def gen_node_table(self):
+        tmp_node_table = pd.DataFrame(self.node_table)
+        profiles = tmp_node_table[COLUMNS['nodes'][1]]
         for index, profile in profiles.iteritems():
             attr_indexes = [i for i, attr in enumerate(profile.split(' '))
                             if attr == '1']
             feats = '|'.join([self.get_feat(i) for i in attr_indexes])
             if not feats:
                 feats = np.nan
-            self.node_table[COLUMNS['nodes'][1]][index] = feats
-        print self.node_table
+            tmp_node_table[COLUMNS['nodes'][1]][index] = feats
+        return tmp_node_table
 
-    def count_feat(self):
+    def gen_feat_table(self, node_table):
         feats = set()
-        for profile in self.node_table[COLUMNS['nodes'][1]][self.node_table.profile.notnull()]:
+        for profile in node_table[COLUMNS['nodes'][1]][self.node_table.profile.notnull()]:
             feat = profile.split('|')
             for f in feat:
                 if f.split(':')[1] != '':
@@ -94,8 +99,41 @@ class GPRawEgoLoader(SnapRawGPLoader):
                  for f in feats]
         new_feats = sorted(list(feats), key=lambda fe: (fe[COLUMNS['attributes'][1]],
                                                         fe[COLUMNS['attributes'][0]]))
+        aux_feat_dict = {feat[COLUMNS['attributes'][1]] + ':' + feat[COLUMNS['attributes'][0]]: i
+                         for i, feat in enumerate(new_feats)}
         new_feat_table = pd.DataFrame(new_feats)
-        print new_feat_table
+        return new_feat_table, aux_feat_dict
+
+    def write_new_csv(self):
+        new_index_node_table = pd.DataFrame(self.new_node_table)
+        for index, profile in enumerate(new_index_node_table[COLUMNS['nodes'][1]]):
+            if profile is np.nan:
+                continue
+            else:
+                feat = profile.split('|')
+                new_profile = set()
+                for f in feat:
+                    row = f.split(':')
+                    if row[1] != '':
+                        index_feat = self.aux_feat_dict[f]
+                        new_profile.add(index_feat)
+                        # index_feat = self.new_feat_table[
+                        #     (self.new_feat_table[COLUMNS['attributes'][1]] == row[0]) & (
+                        #     self.new_feat_table[COLUMNS['attributes'][0]] == row[1])].index.tolist()
+                        # new_profile.add(index_feat[0])
+                # print profile
+                new_profile_li = sorted(new_profile)
+                # print '|'.join([self.get_new_feat(p) for p in new_profile_li])
+                new_profile_str = ' '.join([str(i) for i in new_profile_li])
+                new_index_node_table[COLUMNS['nodes'][1]][index] = new_profile_str
+        # print self.new_index_node_table
+        rfg_settings = rfg.load_ranfig(self.ranfig)
+        dirs = rfg_settings['SNAP']['googleplus']
+        if not os.path.exists(os.path.join(dirs, 'csv_v2')):
+            os.makedirs(os.path.join(dirs, 'csv_v2'))
+        self.new_node_table.to_csv(os.path.join(dirs, 'csv_v2', self.ego + '-node.csv'))
+        self.new_feat_table.to_csv(os.path.join(dirs, 'csv_v2', self.ego + '-feat.csv'))
+        self.edge_table.to_csv(os.path.join(dirs, 'csv_v2', self.ego + '-edge.csv'))
 
     def __init__(self, ego, ranfig_dir=RANFIG_DIR, csv_mode=True):
         SnapRawGPLoader.__init__(self, ranfig_dir)
@@ -106,13 +144,17 @@ class GPRawEgoLoader(SnapRawGPLoader):
             self.node_table, self.edge_table, self.feat_table = self.csv_ego_net(ego)
         else:
             self.node_table, self.edge_table, self.feat_table = self.get_ego_net(ego)
+        self.new_node_table = self.gen_node_table()
+        self.new_feat_table, self.aux_feat_dict = self.gen_feat_table(self.new_node_table)
 
 
 def main():
-    ego = GPRawEgoLoader('100535338638690515335')
-    print ego.feat_table
-    ego.profile_change()
-    ego.count_feat()
+    li = get_ego_nodes()
+    li = li[100:]
+    for index, ego in enumerate(li):
+        ego_net = GPRawEgoLoader(ego)
+        ego_net.write_new_csv()
+        logging.debug('Finish adding No.%d ego network #%s' % (index, ego))
 
 
 if __name__ == '__main__':
