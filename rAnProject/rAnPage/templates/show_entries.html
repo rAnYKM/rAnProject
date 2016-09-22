@@ -1,0 +1,28 @@
+{% extends "ranstyle.html" %}
+{% block body %}
+    <table class="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>uid</th>
+              </tr>
+            </thead>
+          {% for entry in entries %}
+            <tbody>
+              <tr>
+                <td>{{ entry.sid }}</td>
+                <td><a href="{{ url_for('show_profile', uid=entry.uid) }}">{{ entry.uid|safe }}</a></td>
+              </tr>
+            </tbody>
+  {% else %}
+    <tbody>
+        <tr>
+            <td>N/A</td>
+            <td>Nothing Available</td>
+        </tr>
+    </tbody>
+  {% endfor %}
+    </table>
+  {% import "blocks.html" as blocks %}
+    {{blocks.pager('/', p.total, p.limit, p.curr_page)}}
+{% endblock %}

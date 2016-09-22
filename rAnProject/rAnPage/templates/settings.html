@@ -1,0 +1,48 @@
+{% extends "ranstyle.html" %}
+{% block body %}
+    <h3>User: {{ user }}</h3>
+<div class="row">
+    <div class="col-md-6">
+    <form action="{{ url_for('settings', uid=user) }}" method="post">
+    <table class="table">
+            <thead>
+              <tr>
+                  <th>attribute name</th>
+                  <th>category 1</th>
+                  <th>category 2</th>
+                  <th>category 3</th>
+                  <th>Secret?</th>
+              </tr>
+            </thead>
+          {% for item in profile %}
+            <tbody>
+              <tr>
+                  <td>{{ item.att }}</td>
+                  <td>{{ item.c1|safe }}</td>
+                  <td>{{ item.c2|safe }}</td>
+                  <td>{{ item.c3|safe }}</td>
+                  <td><input type="checkbox" value="{{ item.att }}" name="choose"></td>
+              </tr>
+            </tbody>
+  {% else %}
+    <tbody>
+        <tr>
+            <td>N/A</td>
+            <td>Nothing Available</td>
+        </tr>
+    </tbody>
+  {% endfor %}
+    </table>
+        <p>Protection Level: </p>
+        <select name="level">
+            <option value="" disabled="disabled"  style="display:none" selected="selected">Please select</option>
+            <option value="0">Strict</option>
+            <option value="1">Normal</option>
+            <option value="2">Lite</option>
+        </select>
+        <input type="submit" class="btn btn-sm btn-default" value="Submit">
+    </form>
+    </div>
+</div>
+
+{% endblock %}
