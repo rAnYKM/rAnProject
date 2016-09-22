@@ -10,11 +10,10 @@ Load the basic settings for rAnProject
 """
 
 import ConfigParser as cp
+import rAnProject.settings as settings
 
-DEFAULT_SETTING_FILE = 'settings.ini'
 
-
-def load_ranfig(file=DEFAULT_SETTING_FILE):
+def load_ranfig(file=settings.SETTINGS_DIR):
     config = cp.ConfigParser()
     config.read(file)
     ranfig = {section: {option: config.get(section, option)

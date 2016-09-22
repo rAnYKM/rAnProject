@@ -12,6 +12,7 @@ SNAP Google+ & Facebook Data Set
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import rAnProject.settings as settings
 
 from rAnProject import ranfig as rfg
 
@@ -49,7 +50,7 @@ class AttributeLinks(Base):
     attr = Column(String(255), ForeignKey('attributes.attr_id'), nullable=False)
 
 def initialize():
-    ranfig = rfg.load_ranfig('../settings.ini')
+    ranfig = rfg.load_ranfig(settings.SETTINGS_DIR)
     database = ranfig['Database']
     engine = create_engine('%s://%s:%s@%s:%s/%s' %
                            (database['engine'], database['user'], database['password'],

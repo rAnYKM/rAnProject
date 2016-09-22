@@ -14,7 +14,8 @@ SNAPdata.GooglePlus
 from sqlalchemy import Column, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from SNAPdata.database import init_database_from_ranfig
+from rAnProject.SNAPdata.database import init_database_from_ranfig
+import rAnProject.settings as settings
 Base = declarative_base()
 
 COLUMNS = {
@@ -23,7 +24,6 @@ COLUMNS = {
     'attributes': ['attr', 'category', 'root'],
     'links': ['user_id', 'attr', 'root']
 }
-RANFIG_DIR = '../../settings.ini'
 
 
 class Edges(Base):
@@ -51,7 +51,7 @@ class Attributes(Base):
 
 
 def initialize():
-    engine = init_database_from_ranfig(RANFIG_DIR, 'GooglePlus')
+    engine = init_database_from_ranfig(settings.SETTINGS_DIR, 'GooglePlus')
     session = sessionmaker()
     session.configure(bind=engine)
     Base.metadata.drop_all(engine)

@@ -14,17 +14,16 @@ import logging
 import os
 import time
 
-from SNAPdata.GooglePlus.tables import *
-
+from rAnProject.SNAPdata.GooglePlus.tables import *
 from rAnProject import ranfig as rfg
+import rAnProject.settings as settings
 
-DEFAULT_EGO_NODE_LIST = 'nodeList.txt'
 Base = declarative_base()
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 BLOCK_SIZE = 10000
 
 
-def get_ego_nodes(ego_node_dir=DEFAULT_EGO_NODE_LIST):
+def get_ego_nodes(ego_node_dir=settings.GOOGLE_EGO_NODE_LIST_DIR):
     with open(ego_node_dir, 'rb') as fp:
         nodes = [node.strip() for node in fp.readlines()]
     return nodes
@@ -185,4 +184,4 @@ def init_builder(ranfig_dir):
 
 
 if __name__ == '__main__':
-    csv_builder('../../settings.ini')
+    csv_builder(settings.SETTINGS_DIR)

@@ -4,6 +4,8 @@ __pycache__/
 *$py.class
 .idea/
 *.ini
+*.graphml
+.DS_Store
 
 # C extensions
 *.so

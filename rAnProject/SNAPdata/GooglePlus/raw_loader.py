@@ -16,10 +16,11 @@ import time
 
 import numpy as np
 import pandas as pd
-from SNAPdata.GooglePlus.tables import *
+from rAnProject.SNAPdata.GooglePlus.tables import *
 
-from build_raw_database import get_ego_nodes
-from rAnProject import ranfig as rfg
+from rAnProject.SNAPdata.GooglePlus.build_raw_database import get_ego_nodes
+import rAnProject.ranfig as rfg
+import rAnProject.settings as settings
 
 Base = declarative_base()
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -55,7 +56,7 @@ class SnapRawGPLoader:
     def __init_db(self):
         self.engine = init_database_from_ranfig(self.ranfig, 'GooglePlus')
 
-    def __init__(self, ranfig_dir=RANFIG_DIR):
+    def __init__(self, ranfig_dir=settings.SETTINGS_DIR):
         self.ranfig = ranfig_dir
         self.egos = get_ego_nodes()
 
@@ -137,7 +138,7 @@ class GPRawEgoLoader(SnapRawGPLoader):
         self.new_feat_table.to_csv(os.path.join(dirs, 'csv_v2', self.ego + '-feat.csv'), index=False)
         self.edge_table.to_csv(os.path.join(dirs, 'csv_v2', self.ego + '-edge.csv'), index=False)
 
-    def __init__(self, ego, ranfig_dir=RANFIG_DIR, csv_mode=True):
+    def __init__(self, ego, ranfig_dir=settings.SETTINGS_DIR, csv_mode=True):
         SnapRawGPLoader.__init__(self, ranfig_dir)
         if ego not in self.egos:
             raise ValueError('Ego Network #%s does not exist.' % ego)
@@ -164,7 +165,7 @@ class GPCSV2EgoLoader:
                  for value in self.feat_table.values]
         return {node: index for index, node in nodes.iteritems()}, {feat: index for index, feat in enumerate(feats)}
 
-    def __init__(self, ego, ranfig_dir=RANFIG_DIR):
+    def __init__(self, ego, ranfig_dir=settings.SETTINGS_DIR):
         self.ranfig = ranfig_dir
         self.egos = get_ego_nodes()
         if ego not in self.egos:

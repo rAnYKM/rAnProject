@@ -17,7 +17,7 @@ import logging
 import numpy as np
 import pandas as pd
 import graph_tool.all as gt
-import SNAPdata.GooglePlus.raw_loader as ld
+import rAnProject.SNAPdata.GooglePlus.raw_loader as ld
 from tables import COLUMNS
 
 
@@ -44,12 +44,7 @@ class GPEgoNetwork(ld.GPCSV2EgoLoader):
             out_degrees[v] = v.out_degree()
             degrees[v] = in_degrees[v] + out_degrees[v]
             has_degrees[v] = (degrees[v] != 0)
-        network.set_vertex_filter(has_degrees)
-        network.purge_vertices()
-        # Draw Network
-        pos = gt.sfdp_layout(network)
-        network.save('jason.graphml')
-        logging.debug('[Graph-tool] Draw network in %fs' % (time.time() - t0))
+        return network
 
     def get_link_table(self):
         """
@@ -91,7 +86,7 @@ class GPEgoNetwork(ld.GPCSV2EgoLoader):
         self.link_table = self.get_link_table()
         self.relation_table = self.get_relation_table()
         logging.debug('[gp_network] Make tables in %fs' % (time.time() - t0))
-        self._build_ego_network()
+        self.network = self._build_ego_network()
 
 
 def main():

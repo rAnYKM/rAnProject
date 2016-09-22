@@ -10,10 +10,10 @@ Based on Flask micro-architecture
 """
 
 from flask import Flask, request, redirect, url_for, render_template
-from rAnProject.rAnPage import db_session
-from rAnProject.rAnPage import *
+from rAnProject.rAnPage.database import db_session
+from rAnProject.rAnPage.default_db.module_facebook import *
 from sqlalchemy import func, or_
-from rAnPriv.ran_graph import RanGraph
+from rAnProject.rAnPriv.ran_graph import RanGraph
 
 app = Flask(__name__)
 

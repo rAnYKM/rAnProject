@@ -17,7 +17,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 
 from module_facebook import Nodes, Attributes, Relations, AttributeLinks
-from rAnProject import ranfig as rfg
+import rAnProject.ranfig as rfg
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 Base = declarative_base()
@@ -149,7 +149,7 @@ class SnapFacebook:
         logging.debug('SQLAlchemy Core: Insert attribute link list in %f s' % (time.time() - t0))
 
     def __init__(self, ego_id):
-        self.ranfig = rfg.load_ranfig('../../settings.ini')
+        self.ranfig = rfg.load_ranfig()
         self.dir = self.ranfig['SNAP']
         self.root = ego_id
         self.featname = self.__feat_name_list()
