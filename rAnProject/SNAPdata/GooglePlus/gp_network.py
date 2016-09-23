@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 
 
 class GPEgoNetwork(ld.GPCSV2EgoLoader):
-    def _build_ego_network(self):
+    def __build_ego_network(self):
         t0 = time.time()
         network = gt.Graph(directed=True)
         network.add_vertex(len(self.aux_node_dict.keys()))
@@ -33,17 +33,19 @@ class GPEgoNetwork(ld.GPCSV2EgoLoader):
         #           for index, row in self.relation_table.iterrows()]
         network.add_edge_list(self.relation_table.values)
         logging.debug('[Graph-tool] build network in %fs' % (time.time() - t0))
-        # TODO: graph node properties
-        # Degree Properties
-        in_degrees = network.new_vertex_property('int')
-        out_degrees = network.new_vertex_property('int')
-        degrees = network.new_vertex_property('int')
-        has_degrees = network.new_vertex_property('bool')
-        for v in network.vertices():
-            in_degrees[v] = v.in_degree()
-            out_degrees[v] = v.out_degree()
-            degrees[v] = in_degrees[v] + out_degrees[v]
-            has_degrees[v] = (degrees[v] != 0)
+        state = gt.minimize_blockmodel_dl(network)
+        state.draw(vertex_shape=state.get_blocks(), output="jason.pdf")
+        return network
+
+    def __build_attr_network(self):
+        t0 = time.time()
+        network = gt.Graph(directed=False)
+        network.add_vertex(len(self.aux_node_dict.keys()) + len(self.aux_feat_dict.keys()))
+        edge_list = [(e[0] + len(self.aux_node_dict.keys()), e[1]) for e in self.link_table.values]
+        network.add_edge_list(edge_list)
+        logging.debug('[Graph-tool] build attribute network in %fs' % (time.time() - t0))
+        # state = gt.minimize_nested_blockmodel_dl(network, deg_corr=True)
+        # gt.draw_hierarchy(state, output="jason.pdf")
         return network
 
     def get_link_table(self):
@@ -86,11 +88,12 @@ class GPEgoNetwork(ld.GPCSV2EgoLoader):
         self.link_table = self.get_link_table()
         self.relation_table = self.get_relation_table()
         logging.debug('[gp_network] Make tables in %fs' % (time.time() - t0))
-        self.network = self._build_ego_network()
+        self.network = self.__build_ego_network()
+        self.attr_network = self.__build_attr_network()
 
 
 def main():
-    ego = GPEgoNetwork('100535338638690515335')
+    ego = GPEgoNetwork('111213696402662884531')
     # print ego.link_table
     # print ego.relation_table
 

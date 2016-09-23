@@ -160,7 +160,6 @@ class GPCSV2EgoLoader:
         :return: dict, dict
         """
         nodes = self.node_table[COLUMNS['nodes'][0]]
-        print self.feat_table
         feats = [value[1] + ':' + str(value[0])
                  for value in self.feat_table.values]
         return {node: index for index, node in nodes.iteritems()}, {feat: index for index, feat in enumerate(feats)}
