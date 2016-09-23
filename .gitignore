@@ -5,6 +5,7 @@ __pycache__/
 .idea/
 *.ini
 *.graphml
+*.pdf
 .DS_Store
 
 # C extensions
