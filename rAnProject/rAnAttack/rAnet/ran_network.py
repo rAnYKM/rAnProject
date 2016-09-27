@@ -14,7 +14,7 @@ ran_network VS ran_graph
 
 """
 import logging
-from collections import OrderedDict
+from collections import Counter
 import numpy as np
 import pandas as pd
 import graph_tool.all as gt
@@ -300,8 +300,31 @@ class Ranet:
         return tuple(table[table==True].index)
 
     def original_block_model(self):
-        state = gt.minimize_nested_blockmodel_dl(self.network, deg_corr=True)
+        state = gt.minimize_nested_blockmodel_dl(self.network, deg_corr=False)
+        level = state.get_levels()
+        block_list = [self.__level_model(state, v, 2) for v in range(len(self.aux_node_dict.keys()))]
+        return block_list
 
+    def __level_model(self, state, v, num=2):
+        level = state.get_levels()
+        cur_level = level[0].get_blocks()[v]
+        for i in range(num):
+            cur_level = level[0].get_blocks()[cur_level]
+        return cur_level
+
+    def block_analysis(self):
+        blocks = self.original_block_model()
+        tmp_table = pd.DataFrame(self.node_table)
+        tmp_table['block'] = pd.Series(blocks)
+        print tmp_table
+        for i in range(tmp_table['block'].values.max()):
+            li = list(tmp_table[tmp_table['block']==i].index)
+            attr = []
+            for node in li:
+                for ele in self.get_node_feat(node):
+                    attr.append(ele)
+            ctr = Counter(attr)
+            print i, len(li), [(self.feat_table.values[i[0]], i[1]) for i in ctr.most_common(5)]
 
     def __init__(self, is_directed=True):
         self.is_directed = is_directed
