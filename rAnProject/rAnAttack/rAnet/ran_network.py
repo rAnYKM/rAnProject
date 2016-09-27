@@ -14,10 +14,13 @@ ran_network VS ran_graph
 
 """
 import logging
+from collections import OrderedDict
 import numpy as np
 import pandas as pd
 import graph_tool.all as gt
+
 from rAnProject.SNAPdata.GooglePlus.gp_network import GPEgoNetwork
+from rAnProject.rAnAttack.rAnet.ran_featset import RanFeatSet
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -121,6 +124,25 @@ class Ranet:
         else:
             return indices
 
+    def get_feat_node(self, index, is_sorted=False, graph_mode=True):
+        """
+        get a feature's neighbor node index (graph mode: the feat index in graph)
+        :param index: int
+        :param is_sorted: bool
+        :param graph_mode: bool
+        :return: list
+        """
+        if graph_mode:
+            indices = [self.attr_network.vertex_index[v]
+                       for v in self.attr_network.vertex(index).all_neighbours()]
+        else:
+            indices = [self.attr_network.vertex_index[v]
+                       for v in self.attr_network.vertex(self.attr_index_g2t(index, False)).all_neighbours()]
+        if is_sorted:
+            return sorted(indices)
+        else:
+            return indices
+
     def raw_check(self, ego):
         """
         Test the consistency of attribute network and raw data information
@@ -214,6 +236,72 @@ class Ranet:
         feat_u = set(self.get_node_feat(u))
         feat_v = set(self.get_node_feat(v))
         return len(feat_u & feat_v)/float(len(feat_u | feat_v) + 1)
+
+    # Simple Analysis Tool
+    def feature_rank(self, sel_feats, mode='common'):
+        """
+        Rank the most common features/attributes among social nodes with selected features/attributes by index
+        Example of sel_feats:
+        [(1, 3), (2, 4), (5,)]
+        (set1 | set3) & (set2 | set4) & set5
+        modes:
+        - common (default): common neighbor number
+        - jaccard: Jaccard coefficient
+        - ada-node: Adamic/Adar score in network
+        - ada-feat: Adamic/Adar score in attr_network
+        - entropy: mutual information
+        :param sel_feats: list
+        :param mode: string
+        :return: pd.DataFrame
+        """
+        universal_set = set(self.aux_node_dict.values())
+        ex_feats = []
+        for block in sel_feats:
+            block_set = set(self.aux_node_dict.values())
+            flag = False
+            for feat in block:
+                neighbors = set(self.get_feat_node(index=feat, graph_mode=False))
+                if not flag:
+                    block_set = neighbors
+                    flag = True
+                else:
+                    block_set |= neighbors
+                ex_feats.append(feat)
+            universal_set &= block_set
+        ranks = dict()
+        for attr, num in self.aux_feat_dict.iteritems():
+            if num in ex_feats:
+                continue
+            else:
+                neighbors = set(self.get_feat_node(index=num, graph_mode=False))
+                if mode == 'jaccard':
+                    result = len(neighbors & universal_set)/float(len(neighbors | universal_set))
+                elif mode == 'ada-node':
+                    result = 0
+                    for n in neighbors & universal_set:
+                        result += 1 / (np.log2(len(list(self.network.vertex(n).out_neighbours())) + 1) + 1)
+                elif mode == 'ada-feat':
+                    result = 0
+                    for n in neighbors & universal_set:
+                        result += 1 / (np.log2(len(self.get_node_feat(n)) + 1) + 1)
+                elif mode == 'entropy':
+                    result = np.log2(len(neighbors & universal_set) / \
+                             float(len(neighbors) + len(universal_set)) * \
+                             len(self.aux_node_dict.values()))
+                else:
+                    result = len(neighbors & universal_set)
+                if result > 0:
+                    ranks[attr] = result
+        return pd.DataFrame([{FEAT_ID: key, 'count': value} for key, value in ranks.iteritems()])
+
+    def select_feat_by_name(self, name):
+        col = self.feat_table[FEAT_ID]
+        table = col.str.contains(name)
+        return tuple(table[table==True].index)
+
+    def original_block_model(self):
+        state = gt.minimize_nested_blockmodel_dl(self.network, deg_corr=True)
+
 
     def __init__(self, is_directed=True):
         self.is_directed = is_directed

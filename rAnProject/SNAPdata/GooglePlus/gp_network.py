@@ -33,8 +33,8 @@ class GPEgoNetwork(ld.GPCSV2EgoLoader):
         #           for index, row in self.relation_table.iterrows()]
         network.add_edge_list(self.relation_table.values)
         logging.debug('[Graph-tool] build network in %fs' % (time.time() - t0))
-        state = gt.minimize_blockmodel_dl(network)
-        state.draw(vertex_shape=state.get_blocks(), output="jason.pdf")
+        # state = gt.minimize_blockmodel_dl(network)
+        # state.draw(vertex_shape=state.get_blocks(), output="jason.pdf")
         return network
 
     def __build_attr_network(self):
