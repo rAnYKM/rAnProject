@@ -300,20 +300,20 @@ class Ranet:
         return tuple(table[table==True].index)
 
     def original_block_model(self):
-        state = gt.minimize_nested_blockmodel_dl(self.network, deg_corr=False)
-        level = state.get_levels()
+        state = gt.minimize_nested_blockmodel_dl(self.network, deg_corr=True)
+        logging.debug('[Graph-tool]Generating Figures')
         block_list = [self.__level_model(state, v, 2) for v in range(len(self.aux_node_dict.keys()))]
-        return block_list
+        return block_list, state
 
     def __level_model(self, state, v, num=2):
-        level = state.get_levels()
+        level = state.levels
         cur_level = level[0].get_blocks()[v]
         for i in range(num):
             cur_level = level[0].get_blocks()[cur_level]
         return cur_level
 
     def block_analysis(self):
-        blocks = self.original_block_model()
+        blocks, state = self.original_block_model()
         tmp_table = pd.DataFrame(self.node_table)
         tmp_table['block'] = pd.Series(blocks)
         print tmp_table
