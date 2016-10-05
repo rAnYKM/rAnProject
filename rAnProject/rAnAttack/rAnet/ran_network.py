@@ -20,7 +20,7 @@ import pandas as pd
 import graph_tool.all as gt
 
 from rAnProject.SNAPdata.GooglePlus.gp_network import GPEgoNetwork
-from rAnProject.rAnAttack.rAnet.ran_featset import RanFeatSet
+from rAnProject.SNAPdata.Sample.rangp import RanGPNet
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -99,6 +99,19 @@ class Ranet:
         self.link_table = gp_ego.link_table
         self.aux_node_dict = gp_ego.aux_node_dict
         self.aux_feat_dict = gp_ego.aux_feat_dict
+
+    def load_network_from_sample(self):
+        gp_net = RanGPNet()
+        self.network = gp_net.network
+        self.attr_network = gp_net.attr_network
+        self.node_table = gp_net.node_table
+        self.edge_table = gp_net.relation_table
+        self.feat_table = gp_net.feat_table
+        self.link_table = gp_net.link_table
+        self.aux_node_dict = gp_net.aux_node_dict
+        self.aux_feat_dict = gp_net.aux_feat_dict
+        self.is_directed = False
+        self.network.set_directed(self.is_directed)
 
     def get_node_feat(self, index, is_sorted=False, graph_mode=True):
         """
@@ -302,7 +315,7 @@ class Ranet:
     def original_block_model(self):
         state = gt.minimize_nested_blockmodel_dl(self.network, deg_corr=True)
         logging.debug('[Graph-tool]Generating Figures')
-        block_list = [self.__level_model(state, v, 2) for v in range(len(self.aux_node_dict.keys()))]
+        block_list = [self.__level_model(state, v, 0) for v in range(len(self.aux_node_dict.keys()))]
         return block_list, state
 
     def __level_model(self, state, v, num=2):
@@ -325,6 +338,7 @@ class Ranet:
                     attr.append(ele)
             ctr = Counter(attr)
             print i, len(li), [(self.feat_table.values[i[0]], i[1]) for i in ctr.most_common(5)]
+        state.draw(output="jas.pdf")
 
     def __init__(self, is_directed=True):
         self.is_directed = is_directed
