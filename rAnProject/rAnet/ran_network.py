@@ -5,7 +5,7 @@
 
 """
 
-rAnAttack.rAnet
+rAnet
     -- ran_network.py
 
 ran_network VS ran_graph
@@ -314,7 +314,6 @@ class Ranet:
 
     def original_block_model(self):
         state = gt.minimize_nested_blockmodel_dl(self.network, deg_corr=True)
-        logging.debug('[Graph-tool]Generating Figures')
         block_list = [self.__level_model(state, v, 0) for v in range(len(self.aux_node_dict.keys()))]
         return block_list, state
 
@@ -329,7 +328,6 @@ class Ranet:
         blocks, state = self.original_block_model()
         tmp_table = pd.DataFrame(self.node_table)
         tmp_table['block'] = pd.Series(blocks)
-        print tmp_table
         for i in range(tmp_table['block'].values.max()):
             li = list(tmp_table[tmp_table['block']==i].index)
             attr = []
@@ -338,7 +336,8 @@ class Ranet:
                     attr.append(ele)
             ctr = Counter(attr)
             print i, len(li), [(self.feat_table.values[i[0]], i[1]) for i in ctr.most_common(5)]
-        state.draw(output="jas.pdf")
+
+    def conn_prob_by_features
 
     def __init__(self, is_directed=True):
         self.is_directed = is_directed

@@ -45,7 +45,6 @@ class GPEgoNetwork(ld.GPCSV2EgoLoader):
         network.add_edge_list(edge_list)
         logging.debug('[Graph-tool] build attribute network in %fs' % (time.time() - t0))
         # state = gt.minimize_nested_blockmodel_dl(network, deg_corr=True)
-        # gt.draw_hierarchy(state, output="jason.pdf")
         return network
 
     def get_link_table(self):
