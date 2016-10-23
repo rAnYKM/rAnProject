@@ -337,7 +337,23 @@ class Ranet:
             ctr = Counter(attr)
             print i, len(li), [(self.feat_table.values[i[0]], i[1]) for i in ctr.most_common(5)]
 
-    def conn_prob_by_features
+    def prob_conn_by_feat(self, name):
+        feat_indices = self.select_feat_by_name(name)
+        sel_nodes = set()
+        for feat in feat_indices:
+            feat_index = self.attr_index_g2t(feat, False)
+            neighbours = self.attr_network.vertex(feat_index).all_neighbours()
+            sel_nodes |= set([self.attr_network.vertex_index[v] for v in neighbours])
+        print sel_nodes, len(sel_nodes)
+        tmp_network = gt.Graph(self.network)
+        print tmp_network.num_edges() / float(tmp_network.num_vertices() * (tmp_network.num_vertices() - 1))
+        print gt.global_clustering(tmp_network)
+        tmp_network.vertex_properties['selected'] = tmp_network.new_vertex_property("bool")
+        for index in sel_nodes:
+            tmp_network.vertex_properties['selected'][index] = True
+        tmp_network.set_vertex_filter(tmp_network.vertex_properties['selected'])
+        print tmp_network.num_edges() / float(tmp_network.num_vertices()*(tmp_network.num_vertices() - 1))
+        print gt.global_clustering(tmp_network), gt.global_clustering(self.network)
 
     def __init__(self, is_directed=True):
         self.is_directed = is_directed
