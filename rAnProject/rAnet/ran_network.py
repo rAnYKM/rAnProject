@@ -80,6 +80,16 @@ class Ranet:
     >>> [ran.get_node_feat(ran.network.vertex_index[v], False, True) for v in ran.network.vertex(1).all_neighbours()]
     [[4, 5], [0, 1]]
     """
+    @staticmethod
+    def get_density(graph, is_directed=True):
+        nv = graph.num_vertices()
+        ne = graph.num_edges()
+        if is_directed:
+            me = nv*(nv - 1)
+        else:
+            me = nv*(nv - 1)/2
+        return ne/float(me)
+
     def attr_index_g2t(self, index, graph_to_table=True):
         """
         Index Transform from Graph to Table or Table to Graph
@@ -337,23 +347,39 @@ class Ranet:
             ctr = Counter(attr)
             print i, len(li), [(self.feat_table.values[i[0]], i[1]) for i in ctr.most_common(5)]
 
-    def prob_conn_by_feat(self, name):
-        feat_indices = self.select_feat_by_name(name)
+    def prob_conn_by_feat(self, name, exact_match=False):
+        """
+        if the exact match mode is on, then name is the index number of the feature in the table
+        :param name: string/int
+        :param exact_match: bool
+        :return: float, int
+        """
+        if exact_match:
+            feat_indices = [int(name)]
+        else:
+            feat_indices = self.select_feat_by_name(name)
         sel_nodes = set()
         for feat in feat_indices:
             feat_index = self.attr_index_g2t(feat, False)
             neighbours = self.attr_network.vertex(feat_index).all_neighbours()
             sel_nodes |= set([self.attr_network.vertex_index[v] for v in neighbours])
-        print sel_nodes, len(sel_nodes)
+        # print sel_nodes, len(sel_nodes)
         tmp_network = gt.Graph(self.network)
-        print tmp_network.num_edges() / float(tmp_network.num_vertices() * (tmp_network.num_vertices() - 1))
-        print gt.global_clustering(tmp_network)
         tmp_network.vertex_properties['selected'] = tmp_network.new_vertex_property("bool")
         for index in sel_nodes:
             tmp_network.vertex_properties['selected'][index] = True
         tmp_network.set_vertex_filter(tmp_network.vertex_properties['selected'])
-        print tmp_network.num_edges() / float(tmp_network.num_vertices()*(tmp_network.num_vertices() - 1))
-        print gt.global_clustering(tmp_network), gt.global_clustering(self.network)
+        # print gt.global_clustering(tmp_network), gt.global_clustering(self.network)
+        # logging.debug('The network density of sub-graph: %f' % self.get_density(tmp_network))
+        # logging.debug('The network density of original graph: %f' % self.get_density(self.network))
+        return self.get_density(tmp_network), len(sel_nodes)
+
+    def get_feat_density_table(self):
+        den_list = []
+        for i in range(self.feat_table.shape[0]):
+            den, num = self.prob_conn_by_feat(i, True)
+            den_list.append({'id': i, 'name': self.feat_table[FEAT_ID][i],'density': den, 'count': num})
+        return pd.DataFrame(den_list)
 
     def __init__(self, is_directed=True):
         self.is_directed = is_directed

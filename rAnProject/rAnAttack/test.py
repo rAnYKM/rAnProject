@@ -7,4 +7,6 @@ g.load_network_from_snap_gp('100535338638690515335')
 # g.block_analysis()
 # print table
 # print table.sort('count', ascending=False)
-g.prob_conn_by_feat('software')
+# g.prob_conn_by_feat('develop')
+dt = g.get_feat_density_table()
+print dt[dt['count'] >= 20].sort_values(by='density', ascending=False)
