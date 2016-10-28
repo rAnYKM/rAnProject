@@ -20,6 +20,7 @@ import pandas as pd
 import graph_tool.all as gt
 
 from rAnProject.SNAPdata.GooglePlus.gp_network import GPEgoNetwork
+from rAnProject.SNAPdata.Facebook.fb_loader import FacebookEgoNet
 from rAnProject.SNAPdata.Sample.rangp import RanGPNet
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -88,6 +89,8 @@ class Ranet:
             me = nv*(nv - 1)
         else:
             me = nv*(nv - 1)/2
+        if me == 0:
+            return 0
         return ne/float(me)
 
     def attr_index_g2t(self, index, graph_to_table=True):
@@ -99,16 +102,19 @@ class Ranet:
         """
         return index - self.network.num_vertices() if graph_to_table else index + self.network.num_vertices()
 
-    def load_network_from_snap_gp(self, ego):
-        gp_ego = GPEgoNetwork(ego)
-        self.network = gp_ego.network
-        self.attr_network = gp_ego.attr_network
-        self.node_table = gp_ego.node_table
-        self.edge_table = gp_ego.relation_table
-        self.feat_table = gp_ego.feat_table
-        self.link_table = gp_ego.link_table
-        self.aux_node_dict = gp_ego.aux_node_dict
-        self.aux_feat_dict = gp_ego.aux_feat_dict
+    def load_network_from_snap(self, ego, snap='googleplus'):
+        if snap == 'googleplus':
+            ego_net = GPEgoNetwork(ego)
+        else:
+            ego_net = FacebookEgoNet(ego)
+        self.network = ego_net.network
+        self.attr_network = ego_net.attr_network
+        self.node_table = ego_net.node_table
+        self.edge_table = ego_net.relation_table
+        self.feat_table = ego_net.feat_table
+        self.link_table = ego_net.link_table
+        self.aux_node_dict = ego_net.aux_node_dict
+        self.aux_feat_dict = ego_net.aux_feat_dict
 
     def load_network_from_sample(self):
         gp_net = RanGPNet()
@@ -372,7 +378,7 @@ class Ranet:
         # print gt.global_clustering(tmp_network), gt.global_clustering(self.network)
         # logging.debug('The network density of sub-graph: %f' % self.get_density(tmp_network))
         # logging.debug('The network density of original graph: %f' % self.get_density(self.network))
-        return self.get_density(tmp_network), len(sel_nodes)
+        return self.get_density(tmp_network, self.network.is_directed()), len(sel_nodes)
 
     def get_feat_density_table(self):
         den_list = []

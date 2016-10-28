@@ -31,7 +31,9 @@ class GPEgoNetwork(ld.GPCSV2EgoLoader):
         network.add_vertex(len(self.aux_node_dict.keys()))
         # e_list = [(row[COLUMNS['edges'][0]], row[COLUMNS['edges'][1]])
         #           for index, row in self.relation_table.iterrows()]
-        network.add_edge_list(self.relation_table.values)
+        edges = [(row[COLUMNS['edges'][0]], row[COLUMNS['edges'][1]])
+                 for index, row in self.relation_table.iterrows()]
+        network.add_edge_list(edges)
         logging.debug('[Graph-tool] build network in %fs' % (time.time() - t0))
         # state = gt.minimize_blockmodel_dl(network)
         # state.draw(vertex_shape=state.get_blocks(), output="jason.pdf")
@@ -41,7 +43,8 @@ class GPEgoNetwork(ld.GPCSV2EgoLoader):
         t0 = time.time()
         network = gt.Graph(directed=False)
         network.add_vertex(len(self.aux_node_dict.keys()) + len(self.aux_feat_dict.keys()))
-        edge_list = [(e[0] + len(self.aux_node_dict.keys()), e[1]) for e in self.link_table.values]
+        edge_list = [(row[COLUMNS['links'][0]], row[COLUMNS['links'][1]] + len(self.aux_node_dict.keys()))
+                     for index, row in self.link_table.iterrows()]
         network.add_edge_list(edge_list)
         logging.debug('[Graph-tool] build attribute network in %fs' % (time.time() - t0))
         # state = gt.minimize_nested_blockmodel_dl(network, deg_corr=True)
@@ -89,13 +92,3 @@ class GPEgoNetwork(ld.GPCSV2EgoLoader):
         logging.debug('[gp_network] Make tables in %fs' % (time.time() - t0))
         self.network = self.__build_ego_network()
         self.attr_network = self.__build_attr_network()
-
-
-def main():
-    ego = GPEgoNetwork('111213696402662884531')
-    # print ego.link_table
-    # print ego.relation_table
-
-
-if __name__ == '__main__':
-    main()
