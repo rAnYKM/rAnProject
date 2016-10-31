@@ -67,7 +67,7 @@ class Ranet:
 
     Node feat consistency test
     >>> ego = Ranet()
-    >>> ego.load_network_from_snap_gp('111213696402662884531')
+    >>> ego.load_network_from_snap('111213696402662884531')
     >>> ego.raw_check('111213696402662884531')
     True
 
@@ -82,9 +82,10 @@ class Ranet:
     [[4, 5], [0, 1]]
     """
     @staticmethod
-    def get_density(graph, is_directed=True):
+    def get_density(graph):
         nv = graph.num_vertices()
         ne = graph.num_edges()
+        is_directed = graph.is_directed()
         if is_directed:
             me = nv*(nv - 1)
         else:
@@ -105,10 +106,12 @@ class Ranet:
     def load_network_from_snap(self, ego, snap='googleplus'):
         if snap == 'googleplus':
             ego_net = GPEgoNetwork(ego)
+            logging.debug('[rAnet] Google Plus Dataset Loading')
         else:
             ego_net = FacebookEgoNet(ego)
-        self.network = ego_net.network
-        self.attr_network = ego_net.attr_network
+            logging.debug('[rAnet] Facebook Dataset Loading')
+        self.network = gt.Graph(ego_net.network)
+        self.attr_network = gt.Graph(ego_net.attr_network)
         self.node_table = ego_net.node_table
         self.edge_table = ego_net.relation_table
         self.feat_table = ego_net.feat_table
@@ -314,9 +317,9 @@ class Ranet:
                     for n in neighbors & universal_set:
                         result += 1 / (np.log2(len(self.get_node_feat(n)) + 1) + 1)
                 elif mode == 'entropy':
-                    result = np.log2(len(neighbors & universal_set) / \
-                             float(len(neighbors) + len(universal_set)) * \
-                             len(self.aux_node_dict.values()))
+                    result = np.log2(len(neighbors & universal_set) /
+                                     float(len(neighbors) + len(universal_set)) *
+                                     len(self.aux_node_dict.values()))
                 else:
                     result = len(neighbors & universal_set)
                 if result > 0:
@@ -326,7 +329,7 @@ class Ranet:
     def select_feat_by_name(self, name):
         col = self.feat_table[FEAT_ID]
         table = col.str.contains(name)
-        return tuple(table[table==True].index)
+        return tuple(table[table is True].index)
 
     def original_block_model(self):
         state = gt.minimize_nested_blockmodel_dl(self.network, deg_corr=True)
@@ -345,7 +348,7 @@ class Ranet:
         tmp_table = pd.DataFrame(self.node_table)
         tmp_table['block'] = pd.Series(blocks)
         for i in range(tmp_table['block'].values.max()):
-            li = list(tmp_table[tmp_table['block']==i].index)
+            li = list(tmp_table[tmp_table['block'] == i].index)
             attr = []
             for node in li:
                 for ele in self.get_node_feat(node):
@@ -378,14 +381,93 @@ class Ranet:
         # print gt.global_clustering(tmp_network), gt.global_clustering(self.network)
         # logging.debug('The network density of sub-graph: %f' % self.get_density(tmp_network))
         # logging.debug('The network density of original graph: %f' % self.get_density(self.network))
-        return self.get_density(tmp_network, self.network.is_directed()), len(sel_nodes)
+        return self.get_density(tmp_network), len(sel_nodes)
+
+    def gcc_by_feat(self, name, exact_match=False):
+        """
+        if the exact match mode is on, then name is the index number of the feature in the table
+        :param name: string/int
+        :param exact_match: bool
+        :return: float, int
+        """
+        if exact_match:
+            feat_indices = [int(name)]
+        else:
+            feat_indices = self.select_feat_by_name(name)
+        sel_nodes = set()
+        for feat in feat_indices:
+            feat_index = self.attr_index_g2t(feat, False)
+            neighbours = self.attr_network.vertex(feat_index).all_neighbours()
+            sel_nodes |= set([self.attr_network.vertex_index[v] for v in neighbours])
+        # print sel_nodes, len(sel_nodes)
+        tmp_network = gt.Graph(self.network)
+        tmp_network.vertex_properties['selected'] = tmp_network.new_vertex_property("bool")
+        for index in sel_nodes:
+            tmp_network.vertex_properties['selected'][index] = True
+        tmp_network.set_vertex_filter(tmp_network.vertex_properties['selected'])
+        # print gt.global_clustering(tmp_network), gt.global_clustering(self.network)
+        # logging.debug('The network density of sub-graph: %f' % self.get_density(tmp_network))
+        # logging.debug('The network density of original graph: %f' % self.get_density(self.network))
+        return gt.global_clustering(tmp_network), len(sel_nodes)
+
+    def lcc_by_feat(self, name, exact_match=False):
+        """
+        if the exact match mode is on, then name is the index number of the feature in the table
+        :param name: string/int
+        :param exact_match: bool
+        :return: float, int
+        """
+        if exact_match:
+            feat_indices = [int(name)]
+        else:
+            feat_indices = self.select_feat_by_name(name)
+        sel_nodes = set()
+        for feat in feat_indices:
+            feat_index = self.attr_index_g2t(feat, False)
+            neighbours = self.attr_network.vertex(feat_index).all_neighbours()
+            sel_nodes |= set([self.attr_network.vertex_index[v] for v in neighbours])
+        # print sel_nodes, len(sel_nodes)
+        tmp_network = gt.Graph(self.network)
+        tmp_network.vertex_properties['selected'] = tmp_network.new_vertex_property("bool")
+        for index in sel_nodes:
+            tmp_network.vertex_properties['selected'][index] = True
+        tmp_network.set_vertex_filter(tmp_network.vertex_properties['selected'])
+        lcc_list = gt.local_clustering(tmp_network, undirected=not tmp_network.is_directed())
+        # value_list = [lcc_list[vertex] for vertex in tmp_network.vertices()]
+        return gt.vertex_average(tmp_network, lcc_list), len(sel_nodes)
 
     def get_feat_density_table(self):
         den_list = []
         for i in range(self.feat_table.shape[0]):
             den, num = self.prob_conn_by_feat(i, True)
-            den_list.append({'id': i, 'name': self.feat_table[FEAT_ID][i],'density': den, 'count': num})
-        return pd.DataFrame(den_list)
+            den_list.append({'id': i,
+                             'name': self.feat_table[FEAT_ID][i],
+                             'density': den,
+                             'count': num})
+        return pd.DataFrame(den_list), self.get_density(self.network)
+
+    def get_feat_gcc_table(self):
+        gcc_list = []
+        for i in range(self.feat_table.shape[0]):
+            gcc, num = self.gcc_by_feat(i, True)
+            gcc_list.append({'id': i,
+                             'name': self.feat_table[FEAT_ID][i],
+                             'gcc': gcc,
+                             'count': num})
+        return pd.DataFrame(gcc_list), gt.global_clustering(self.network)
+
+    def get_feat_ave_lcc_table(self):
+        lcc_list = []
+        for i in range(self.feat_table.shape[0]):
+            lcc_ave, num = self.lcc_by_feat(i, True)
+            lcc_list.append({'id': i,
+                             'name': self.feat_table[FEAT_ID][i],
+                             'lcc': lcc_ave,
+                             'count': num})
+        whole = gt.local_clustering(self.network, undirected=not self.network.is_directed())
+        former = [whole[vertex] for vertex in self.network.vertices()]
+        print former
+        return pd.DataFrame(lcc_list), gt.vertex_average(self.network, whole)
 
     def __init__(self, is_directed=True):
         self.is_directed = is_directed
