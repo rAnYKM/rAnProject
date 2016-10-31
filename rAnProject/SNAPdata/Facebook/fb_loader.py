@@ -116,7 +116,7 @@ class FacebookEgoNet:
                 tmp_link = {'user_id': node, 'attr': p}
                 pre_link.append(tmp_link)
         for feat, cate in feats:
-            tmp_attr = {'attr': 'a' + self.__abbr_attr(cate) + feat, 'cate': '|'.join(cate)}
+            tmp_attr = {'attr': 'a' + self.__abbr_attr(cate) + feat, 'category': '|'.join(cate)}
             pre_attr.append(tmp_attr)
         for edge in edges:
             tmp_edge = {'start': edge[0], 'end': edge[1]}

@@ -107,9 +107,12 @@ class Ranet:
         if snap == 'googleplus':
             ego_net = GPEgoNetwork(ego)
             logging.debug('[rAnet] Google Plus Dataset Loading')
-        else:
+        elif snap == 'facebook':
             ego_net = FacebookEgoNet(ego)
             logging.debug('[rAnet] Facebook Dataset Loading')
+        else:
+            ego_net = RanGPNet()
+            logging.debug('[rAnet] Google Employer Dataset Loading')
         self.network = gt.Graph(ego_net.network)
         self.attr_network = gt.Graph(ego_net.attr_network)
         self.node_table = ego_net.node_table
@@ -343,7 +346,7 @@ class Ranet:
             cur_level = level[0].get_blocks()[cur_level]
         return cur_level
 
-    def block_analysis(self):
+    def block_analysis(self, n=5):
         blocks, state = self.original_block_model()
         tmp_table = pd.DataFrame(self.node_table)
         tmp_table['block'] = pd.Series(blocks)
@@ -354,7 +357,12 @@ class Ranet:
                 for ele in self.get_node_feat(node):
                     attr.append(ele)
             ctr = Counter(attr)
-            print i, len(li), [(self.feat_table.values[i[0]], i[1]) for i in ctr.most_common(5)]
+            comm_table = [{'attr': self.feat_table[FEAT_ID][elem[0]],
+                          'category': self.feat_table[FEAT_CATEGORY][elem[0]],
+                          'count': elem[1]}
+                          for elem in ctr.most_common(n)]
+            logging.debug('[block analysis] Block #%d, number of nodes: %d' % (i, len(li)))
+            print pd.DataFrame(comm_table)
 
     def prob_conn_by_feat(self, name, exact_match=False):
         """
