@@ -8,17 +8,18 @@
 Based on Flask micro-architecture
 
 """
-
+import sys
+sys.path.append("../..")
 from flask import Flask, request, redirect, url_for, render_template
-from rAnProject.rAnPage.database import db_session
-from rAnProject.rAnPage.default_db.module_facebook import *
+from database import db_session
+from default_db.module_facebook import *
 from sqlalchemy import func, or_
 from rAnProject.rAnPriv.ran_graph import RanGraph
 
 app = Flask(__name__)
 
 app.config.update(dict(
-    DEBUG=True,
+    DEBUG=False,
     SECRET_KEY='development key',
     USERNAME='ran',
     PASSWORD='root'
@@ -132,4 +133,4 @@ def shutdown_session(exception=None):
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')

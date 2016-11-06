@@ -15,7 +15,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 from rAnProject import ranfig as rfg
 
-ranfig = rfg.load_ranfig('../settings.ini')
+ranfig = rfg.load_ranfig()
 database = ranfig['Database']
 engine = create_engine('%s://%s:%s@%s:%s/%s' %
                        (database['engine'], database['user'], database['password'],
