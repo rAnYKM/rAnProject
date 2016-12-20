@@ -162,7 +162,19 @@ class FacebookEgoNet:
                  for value in self.feat_table.values]
         return {node: index for index, node in nodes.iteritems()}, {feat: index for index, feat in enumerate(feats)}
 
-    def __init__(self, ego, ranfig_dir=settings.SETTINGS_DIR):
+    # Function designed for fb_merge
+    def node_feats(self):
+        nodes = self.__node_feat_list()
+        node_dict = {}
+        for node, index in nodes:
+            profile = [self.feat_table.iloc[i][COLUMNS['attributes'][0]] for i in index]
+            node_dict[node] = profile
+        # add ego
+        profile = [self.feat_table.iloc[i][COLUMNS['attributes'][0]] for i in self.__ego_feat_list()]
+        node_dict[self.ego] = profile
+        return node_dict
+
+    def __init__(self, ego, ranfig_dir=settings.SETTINGS_DIR, build_network=True):
         self.ranfig = ranfig_dir
         self.egos = get_ego_nodes()
         if ego not in self.egos:
@@ -170,11 +182,13 @@ class FacebookEgoNet:
         self.ego = ego
         self.dirs = rfg.load_ranfig(self.ranfig)['SNAP']
         t0 = time.time()
+
         self.node_table, self.relation_table, self.feat_table, self.link_table = self.gen_tables()
         # print self.link_table
         # print self.node_table, self.relation_table, self.feat_table, self.link_table
         self.aux_node_dict, self.aux_feat_dict = self.get_aux_dict()
         # print self.aux_node_dict, self.aux_feat_dict
-        self.network = self.__build_ego_network()
-        self.attr_network = self.__build_attr_network()
+        if build_network:
+            self.network = self.__build_ego_network()
+            self.attr_network = self.__build_attr_network()
         logging.debug('Ego Network #%s Loaded in %f s' % (self.ego, time.time() - t0))

@@ -59,3 +59,6 @@ def initialize():
     session.configure(bind=engine)
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
+
+# if __name__ == '__main__':
+#     initialize()
